@@ -35,6 +35,7 @@ func (c *Log) Read(offset uint64) (Record, error) {
 	return c.records[offset], nil
 }
 
+// Adding Protobuf Types.
 type Record struct {
 	Value  []byte `json:"value"`
 	Offset uint64 `json:"offset"`
