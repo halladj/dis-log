@@ -35,6 +35,7 @@ func TestIndex(t *testing.T) {
 		err = idx.Write(want.Off, want.Pos)
 		require.NoError(t, err)
 
+		// TODO: fix the bug here
 		_, pos, err := idx.Read(int64(want.Off))
 		require.NoError(t, err)
 		require.Equal(t, want.Pos, pos)
