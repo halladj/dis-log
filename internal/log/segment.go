@@ -5,7 +5,7 @@ import (
 	"os"
 	"path"
 
-	api "github.com/halladj/proglog/api/v1"
+	api "github.com/halladj/dis-log/api/v1"
 	"google.golang.org/protobuf/proto"
 )
 

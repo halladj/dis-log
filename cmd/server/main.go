@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/halladj/proglog/internal/server"
+	"github.com/halladj/dis-log/internal/server"
 )
 
 func main() {

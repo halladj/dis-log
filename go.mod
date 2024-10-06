@@ -1,4 +1,4 @@
-module github.com/halladj/proglog
+module github.com/halladj/dis-log
 
 go 1.23.1
 
