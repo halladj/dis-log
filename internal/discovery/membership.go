@@ -86,11 +86,20 @@ func (m Membership) eventHandler() {
 }
 
 func (m *Membership) handleJoin(member serf.Member) {
-	//TODO: complete
+	if err := m.handler.Join(
+		member.Name,
+		member.Tags["rpc_addr"],
+	); err != nil {
+		m.logError(err, "failed to join", member)
+	}
 }
-func (m *Membership) handleLeave(member serf.Member) {
 
-	//TODO: complete
+func (m *Membership) handleLeave(member serf.Member) {
+	if err := m.handler.Leave(
+		member.Name,
+	); err != nil {
+		m.logError(err, "failde to leave", member)
+	}
 }
 
 func (m *Membership) isLocal(member serf.Member) bool {
@@ -103,4 +112,7 @@ type Config struct {
 	Tags           map[string]string
 	StartJoinAddrs []string
 }
-type Handler struct{}
+type Handler interface {
+	Join(name, addr string) error
+	Leave(name string) error
+}
