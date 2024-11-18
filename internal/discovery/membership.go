@@ -1,10 +1,12 @@
 package discovery
 
+//hey
 import (
 	"net"
 
-	"github.com/hashicorp/serf/serf"
 	"go.uber.org/zap"
+
+	"github.com/hashicorp/serf/serf"
 )
 
 type Membership struct {
@@ -21,21 +23,24 @@ func New(handler Handler, config Config) (*Membership, error) {
 		handler: handler,
 		logger:  zap.L().Named("membership"),
 	}
-
 	if err := c.setupSerf(); err != nil {
 		return nil, err
 	}
-
 	return c, nil
 }
 
-func (m Membership) setupSerf() (err error) {
-	addr, err := net.ResolveTCPAddr(
-		"tcp", m.BindAddr)
+type Config struct {
+	NodeName       string
+	BindAddr       string
+	Tags           map[string]string
+	StartJoinAddrs []string
+}
+
+func (m *Membership) setupSerf() (err error) {
+	addr, err := net.ResolveTCPAddr("tcp", m.BindAddr)
 	if err != nil {
 		return err
 	}
-
 	config := serf.DefaultConfig()
 	config.Init()
 	config.MemberlistConfig.BindAddr = addr.IP.String()
@@ -43,19 +48,14 @@ func (m Membership) setupSerf() (err error) {
 	m.events = make(chan serf.Event)
 	config.EventCh = m.events
 	config.Tags = m.Tags
-	config.NodeName = m.NodeName
+	config.NodeName = m.Config.NodeName
 	m.serf, err = serf.Create(config)
-
 	if err != nil {
 		return err
 	}
-
 	go m.eventHandler()
 	if m.StartJoinAddrs != nil {
-		_, err = m.serf.Join(
-			m.StartJoinAddrs,
-			true,
-		)
+		_, err = m.serf.Join(m.StartJoinAddrs, true)
 		if err != nil {
 			return err
 		}
@@ -63,10 +63,14 @@ func (m Membership) setupSerf() (err error) {
 	return nil
 }
 
-func (m Membership) eventHandler() {
+type Handler interface {
+	Join(name, addr string) error
+	Leave(name string) error
+}
+
+func (m *Membership) eventHandler() {
 	for e := range m.events {
 		switch e.EventType() {
-
 		case serf.EventMemberJoin:
 			for _, member := range e.(serf.MemberEvent).Members {
 				if m.isLocal(member) {
@@ -77,7 +81,7 @@ func (m Membership) eventHandler() {
 		case serf.EventMemberLeave, serf.EventMemberFailed:
 			for _, member := range e.(serf.MemberEvent).Members {
 				if m.isLocal(member) {
-					continue
+					return
 				}
 				m.handleLeave(member)
 			}
@@ -98,7 +102,7 @@ func (m *Membership) handleLeave(member serf.Member) {
 	if err := m.handler.Leave(
 		member.Name,
 	); err != nil {
-		m.logError(err, "failde to leave", member)
+		m.logError(err, "failed to leave", member)
 	}
 }
 
@@ -114,23 +118,11 @@ func (m *Membership) Leave() error {
 	return m.serf.Leave()
 }
 
-func (m *Membership) logError(
-	err error, msg string, member serf.Member) {
+func (m *Membership) logError(err error, msg string, member serf.Member) {
 	m.logger.Error(
 		msg,
 		zap.Error(err),
 		zap.String("name", member.Name),
 		zap.String("rpc_addr", member.Tags["rpc_addr"]),
 	)
-}
-
-type Config struct {
-	NodeName       string
-	BindAddr       string
-	Tags           map[string]string
-	StartJoinAddrs []string
-}
-type Handler interface {
-	Join(name, addr string) error
-	Leave(name string) error
 }
