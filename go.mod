@@ -7,6 +7,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/hashicorp/raft v1.1.1 // indirect
+	github.com/hashicorp/raft-boltdb v0.0.0-20241202213821-f9dd2ba30efd
 	github.com/hashicorp/serf v0.8.5
 	github.com/stretchr/testify v1.4.0
 	github.com/travisjeffery/go-dynaport v0.0.0-20171218080632-f8768fb615d5
