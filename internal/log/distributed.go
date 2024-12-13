@@ -17,12 +17,6 @@ import (
 	"github.com/hashicorp/raft"
 )
 
-type DistributedLog struct {
-	config Config
-	log    *Log
-	raft   *raft.Raft
-}
-
 // defining the StreamLayer struct,
 // and checking if it satifies the
 // raft.StreamLayer interface
@@ -113,6 +107,12 @@ func (s *StreamLayer) Dial(
 		)
 	}
 	return conn, err
+}
+
+type DistributedLog struct {
+	config Config
+	log    *Log
+	raft   *raft.Raft
 }
 
 func NewDistributedLog(
@@ -299,6 +299,49 @@ func (l *DistributedLog) Read(offset uint64) (
 	*api.Record, error,
 ) {
 	return l.log.Read(offset)
+}
+
+func (l *DistributedLog) Join(
+	id string, addr string,
+) error {
+	configFuture := l.raft.GetConfiguration()
+	if err := configFuture.Error(); err != nil {
+		return err
+	}
+
+	serverID := raft.ServerID(id)
+	serverAddr := raft.ServerAddress(addr)
+
+	for _, srv := range configFuture.Configuration().Servers {
+
+		if srv.ID == serverID || srv.Address == serverAddr {
+			if srv.ID == serverID && srv.Address == serverAddr {
+				// has already joined.
+				return nil
+			}
+			removeFuture := l.raft.RemoveServer(
+				serverID, 0, 0,
+			)
+			if err := removeFuture.Error(); err != nil {
+				return err
+			}
+		}
+
+	}
+	addFuture := l.raft.AddVoter(
+		serverID, serverAddr, 0, 0,
+	)
+	if err := addFuture.Error(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (l *DistributedLog) Leave(id string) error {
+	removeFuture := l.raft.RemoveServer(
+		raft.ServerID(id), 0, 0,
+	)
+	return removeFuture.Error()
 }
 
 type fsm struct {
