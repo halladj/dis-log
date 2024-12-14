@@ -344,6 +344,33 @@ func (l *DistributedLog) Leave(id string) error {
 	return removeFuture.Error()
 }
 
+func (l *DistributedLog) WaitForLeader(
+	timeout time.Duration,
+) error {
+	timeoutc := time.After(timeout)
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-timeoutc:
+			return fmt.Errorf("time out")
+		case <-ticker.C:
+			if l := l.raft.Leader(); l != "" {
+				return nil
+			}
+		}
+	}
+}
+
+func (l *DistributedLog) Close() error {
+	f := l.raft.Shutdown()
+	if err := f.Error(); err != nil {
+		return err
+	}
+	return l.log.Close()
+}
+
 type fsm struct {
 	log *Log
 }
