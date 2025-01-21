@@ -40,8 +40,13 @@ The architecture of the distributed logging system consists of the following com
    ```
 2 Build the application:
   ```bash
-  // not deployed to GCP yet !!
+
+
+
+// not deployed to GCP yet !!
   ```
+must also mention that i used surf for service discovery....
+
 ### Contributing
 - Contributions are welcome! Please open an issue or submit a pull request.
 ### License
