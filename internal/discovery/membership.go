@@ -5,6 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/hashicorp/raft"
 	"github.com/hashicorp/serf/serf"
 )
 
@@ -52,7 +53,7 @@ func (m *Membership) setupSerf() (err error) {
 	if err != nil {
 		return err
 	}
-	go m.eventHandler()
+	go m.eventHandler() 
 	if m.StartJoinAddrs != nil {
 		_, err = m.serf.Join(m.StartJoinAddrs, true)
 		if err != nil {
@@ -62,10 +63,12 @@ func (m *Membership) setupSerf() (err error) {
 	return nil
 }
 
+
 type Handler interface {
 	Join(name, addr string) error
 	Leave(name string) error
 }
+
 
 func (m *Membership) eventHandler() {
 	for e := range m.events {
@@ -105,6 +108,7 @@ func (m *Membership) handleLeave(member serf.Member) {
 	}
 }
 
+
 func (m *Membership) isLocal(member serf.Member) bool {
 	return m.serf.LocalMember().Name == member.Name
 }
@@ -117,9 +121,10 @@ func (m *Membership) Leave() error {
 	return m.serf.Leave()
 }
 
+
 func (m *Membership) logError(err error, msg string, member serf.Member) {
 	log := m.logger.Error
-	if err != nil {
+	if err == raft.ErrNotLeader {
 		log = m.logger.Debug
 	}
 	log(
@@ -129,3 +134,5 @@ func (m *Membership) logError(err error, msg string, member serf.Member) {
 		zap.String("rpc_addr", member.Tags["rpc_addr"]),
 	)
 }
+
+
